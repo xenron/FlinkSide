@@ -1,12 +1,24 @@
 package com.flink.demo.wordcount;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.flink.api.common.functions.FlatMapFunction;
+import org.apache.flink.api.common.typeinfo.Types;
+import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.utils.ParameterTool;
+import org.apache.flink.configuration.Configuration;
+import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
+
+import java.util.stream.Stream;
 
 /**
  * Author: Mr.Deng
@@ -14,8 +26,46 @@ import org.apache.flink.util.Collector;
  * Desc: 使用flink对指定窗口内的数据进行实时统计，最终把结果打印出来
  *       先在node21机器上执行nc -l 9000
  */
-public class StreamingWindowWordCount {
+public class StreamingJobWordCount {
     public static void main(String[] args) throws Exception {
+        countWord01();
+    }
+
+    public static void countWord01() throws Exception {
+        Configuration conf = new Configuration() {{
+            setInteger("rest.port", 9191);
+            setBoolean("local.start-webserver", true);
+        }};
+        final StreamExecutionEnvironment streamEnv = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf);
+        streamEnv.setParallelism(4).setStreamTimeCharacteristic(TimeCharacteristic.IngestionTime);
+        streamEnv
+                .socketTextStream("localhost",9999)
+                .flatMap((String line, Collector<KeyCount> out) -> {
+                    Stream.of(line.split("¥¥s+"))
+                            .forEach(value -> out.collect(new KeyCount(value, 1)));
+                })
+                .returns(Types.POJO(KeyCount.class))
+                .keyBy(new KeySelector<KeyCount, String>() {
+                    @Override
+                    public String getKey(KeyCount value) throws Exception {
+                        return value.getKey();
+                    }
+                })
+                .timeWindow(Time.seconds(10))
+                .sum("count")
+                .print();
+        streamEnv.execute("Flink Stream Java API Skeleton");
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class KeyCount {
+        private String key;
+        private int count;
+    }
+
+    public static void countWord02(String[] args) throws Exception {
         // String hostname = "211.1xx.1xx.6x";
         String hostname = "192.168.101.184";
         // 定义socket的端口号
