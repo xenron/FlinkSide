@@ -1,0 +1,22 @@
+# Java
+.classpath
+.project
+.settings
+
+# Idea
+.idea/*
+*.iml
+*.ipr
+*.iws
+
+# Eclipse
+
+# Maven
+target/*
+
+# cache
+.DS_Store
+
+# log
+logs/*
+
