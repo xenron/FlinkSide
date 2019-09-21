@@ -23,7 +23,7 @@ public class NetCatConsole {
         ServerSocket server;
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         List<String> messageList = new ArrayList<String>();
-        for (int i = 0; i < 200; i ++) {
+        for (int i = 0; i < 2000; i++) {
             Random random = new Random();
             int len = random.nextInt(5);
             if (len == 0) {
@@ -31,7 +31,7 @@ public class NetCatConsole {
             }
             int initialInt = Integer.valueOf('a');
             StringBuffer messageStringBuffer = new StringBuffer();
-            for (int j = 0; j < len; j ++) {
+            for (int j = 0; j < len; j++) {
                 int currentInt = initialInt + j;
                 messageStringBuffer.append((char) currentInt);
             }
@@ -41,8 +41,8 @@ public class NetCatConsole {
         if (args.length == 1) {
             try {
                 port = Integer.parseInt(args[0]);
-            } catch(Exception e) {
-                String help="(1)no arguments,listen the default port:9999\n\"java nc\"\n\n(2)or listen customer port:8888\n\"java nc 8888\"";
+            } catch (Exception e) {
+                String help = "(1)no arguments,listen the default port:9999\n\"java nc\"\n\n(2)or listen customer port:8888\n\"java nc 8888\"";
                 System.out.println(help);
                 return;
             }
@@ -67,7 +67,7 @@ public class NetCatConsole {
 
             for (String message : messageList) {
                 pw.println(message);
-                Thread.sleep(100);
+                Thread.sleep(200);
             }
 
         } catch (Exception e) {

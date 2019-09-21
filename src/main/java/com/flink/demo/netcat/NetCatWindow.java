@@ -51,7 +51,7 @@ public class NetCatWindow extends WindowAdapter implements ActionListener {
             try {
                 client = server.accept();
 
-                System.out.println("["+sdf.format(new Date())+"] "+client.getInetAddress() + "已建立连接！");
+                System.out.println("[" + sdf.format(new Date()) + "] " + client.getInetAddress() + "已建立连接！");
                 // 输入流
                 InputStream is = client.getInputStream();
                 BufferedReader bri = new BufferedReader(new InputStreamReader(
@@ -73,7 +73,7 @@ public class NetCatWindow extends WindowAdapter implements ActionListener {
                 os.close();
                 pw.close();
             } catch (Exception e) {
-                System.out.println("["+sdf.format(new Date())+"] connection exit!");
+                System.out.println("[" + sdf.format(new Date()) + "] connection exit!");
                 System.out.println();
             } finally {
 
@@ -118,8 +118,8 @@ public class NetCatWindow extends WindowAdapter implements ActionListener {
         if (args.length == 1) {
             try {
                 port = Integer.parseInt(args[0]);
-            } catch(Exception e) {
-                String help="(1)no arguments,listen the default port:9999\n\"java nc\"\n\n(2)or listen customer port:8888\n\"java nc 8888\"";
+            } catch (Exception e) {
+                String help = "(1)no arguments,listen the default port:9999\n\"java nc\"\n\n(2)or listen customer port:8888\n\"java nc 8888\"";
                 System.out.println(help);
                 return;
             }

@@ -63,10 +63,10 @@ public class BatchJobWordCount {
     /**
      * Skip Stop Words
      */
-    public static class LineSplitter implements FlatMapFunction<String, Tuple2<String, Integer>> {
+    private static class LineSplitter implements FlatMapFunction<String, Tuple2<String, Integer>> {
         public void flatMap(String line, Collector<Tuple2<String, Integer>> out) {
             for (String word : line.split(" ")) {
-                if (! ("".equals(word) || "?".equals(word) || "!".equals(word))) {
+                if (!("".equals(word) || "?".equals(word) || "!".equals(word))) {
                     out.collect(new Tuple2<String, Integer>(word, 1));
                 }
             }
