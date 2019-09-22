@@ -1,4 +1,4 @@
-# Java
+# Eclipse
 .classpath
 .project
 .settings
@@ -8,8 +8,6 @@
 *.iml
 *.ipr
 *.iws
-
-# Eclipse
 
 # Maven
 target/*

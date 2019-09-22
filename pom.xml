@@ -3,7 +3,7 @@
 
     <!-- 模型版本。maven2.0必须是这样写，现在是maven2唯一支持的版本 -->
     <modelVersion>4.0.0</modelVersion>
-    <!-- 公司或者组织的唯一标志，并且配置时生成的路径也是由此生成， 如com.winner.trade，maven会将该项目打成的jar包放本地路径：/com/winner/trade -->
+    <!-- 公司或者组织的唯一标志，并且配置时生成的路径也是由此生成， 如com.test，maven会将该项目打成的jar包放本地路径：/com/test -->
     <groupId>com.flink</groupId>
     <!-- 本项目的唯一ID，一个groupId下面可能多个项目，就是靠artifactId来区分的 -->
     <artifactId>FlinkSide</artifactId>
@@ -64,6 +64,7 @@
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-clients_${scala.binary.version}</artifactId>
             <version>${flink.version}</version>
+            <scope>provided</scope>
         </dependency>
         <!-- Flink Debug -->
         <dependency>
