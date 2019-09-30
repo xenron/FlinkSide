@@ -1,4 +1,4 @@
-package com.flink.demo.java.other;
+package com.flink.demo.java.naive;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -26,7 +26,7 @@ import java.util.stream.Stream;
  * Desc: 使用flink对指定窗口内的数据进行实时统计，最终把结果打印出来
  * 先在node21机器上执行nc -l 9000
  */
-public class StreamingJobOffset {
+public class StreamingJobKeySelect {
     public static void main(String[] args) throws Exception {
         countWord01();
     }

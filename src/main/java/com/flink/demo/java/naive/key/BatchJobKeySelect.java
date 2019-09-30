@@ -14,7 +14,7 @@ import org.apache.flink.util.Collector;
 
 import java.util.stream.Stream;
 
-public class BatchJobKeySelector {
+public class BatchJobKeySelect {
 
     public static void main(String[] args) throws Exception {
         String[] inputArray = {
