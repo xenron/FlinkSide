@@ -1,4 +1,4 @@
-package com.flink.demo.java.time;
+package com.flink.demo.java.homework;
 
 import com.flink.demo.java.netcat.NetCatConsole;
 import org.apache.flink.api.common.functions.MapFunction;
@@ -26,7 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 
 
-public class StreamingJobWatermark {
+public class Lecture04 {
 
     public static void main(String[] args) throws Exception {
         //定义socket的端口号

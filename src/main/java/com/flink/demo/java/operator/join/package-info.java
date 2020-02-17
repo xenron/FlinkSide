@@ -1,1 +1,1 @@
-package com.flink.demo.java.join;
+package com.flink.demo.java.operator.join;

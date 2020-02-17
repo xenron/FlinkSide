@@ -28,12 +28,13 @@ import java.util.stream.Stream;
  */
 public class StreamingJobWordCount {
     public static void main(String[] args) throws Exception {
-//        countWordPojo();
-        countWordKeySelector();
+//        countWordByPojoPropertyName();
+        countWordByKeySelector();
+//        countWordByTupleOffset();
 //        countWord02(args);
     }
 
-    public static void countWordPojo() throws Exception {
+    public static void countWordByPojoPropertyName() throws Exception {
         // http://localhost:9191/
         // http://localhost:9191/#/overview
         Configuration conf = new Configuration() {{
@@ -44,30 +45,19 @@ public class StreamingJobWordCount {
         streamEnv.setParallelism(4).setStreamTimeCharacteristic(TimeCharacteristic.IngestionTime);
         streamEnv
                 .socketTextStream("localhost", 9999)
-                .flatMap((String line, Collector<KeyCount> out) -> {
-                    Stream.of(line.split("¥¥s+"))
-                            .forEach(value -> out.collect(new KeyCount(value, 1)));
+                .flatMap((String line, Collector<WordCount> out) -> {
+                    Stream.of(line.split("\\s+"))
+                            .forEach(value -> out.collect(new WordCount(value, 1)));
                 })
-                .returns(Types.POJO(KeyCount.class))
-                .keyBy("key")
+                .returns(Types.POJO(WordCount.class))
+                .keyBy("word")
                 .timeWindow(Time.seconds(10))
                 .sum("count")
                 .print();
         streamEnv.execute("Flink Stream Java API Skeleton");
     }
 
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class KeyCount {
-        private String key;
-        private int count;
-//        public String getKey() {
-//            return key;
-//        }
-    }
-
-    public static void countWordKeySelector() throws Exception {
+    public static void countWordByKeySelector() throws Exception {
         // http://localhost:9191/
         // http://localhost:9191/#/overview
         Configuration conf = new Configuration() {{
@@ -78,19 +68,42 @@ public class StreamingJobWordCount {
         streamEnv.setParallelism(4).setStreamTimeCharacteristic(TimeCharacteristic.IngestionTime);
         streamEnv
                 .socketTextStream("localhost", 9999)
-                .flatMap((String line, Collector<KeyCount> out) -> {
-                    Stream.of(line.split("¥¥s+"))
-                            .forEach(value -> out.collect(new KeyCount(value, 1)));
+                .flatMap((String line, Collector<WordCount> out) -> {
+                    Stream.of(line.split("\\s+"))
+                            .forEach(value -> out.collect(new WordCount(value, 1)));
                 })
-                .returns(Types.POJO(KeyCount.class))
-                .keyBy(new KeySelector<KeyCount, String>() {
+                .returns(Types.POJO(WordCount.class))
+                .keyBy(new KeySelector<WordCount, String>() {
                     @Override
-                    public String getKey(KeyCount value) throws Exception {
-                        return value.getKey();
+                    public String getKey(WordCount value) throws Exception {
+                        return value.getWord();
                     }
                 })
                 .timeWindow(Time.seconds(10))
                 .sum("count")
+                .print();
+        streamEnv.execute("Flink Stream Java API Skeleton");
+    }
+
+    public static void countWordByTupleOffset() throws Exception {
+        // http://localhost:9191/
+        // http://localhost:9191/#/overview
+        Configuration conf = new Configuration() {{
+            setInteger("rest.port", 9191);
+            setBoolean("local.start-webserver", true);
+        }};
+        final StreamExecutionEnvironment streamEnv = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf);
+        streamEnv.setParallelism(4).setStreamTimeCharacteristic(TimeCharacteristic.IngestionTime);
+        streamEnv
+                .socketTextStream("localhost", 9999)
+                .flatMap((String line, Collector<Tuple2<String, Integer>> out) -> {
+                    Stream.of(line.split("\\s+"))
+                            .forEach(value -> out.collect(Tuple2.of(value, 1)));
+                })
+                .returns(Types.TUPLE(Types.STRING, Types.INT))
+                .keyBy(0)
+                .timeWindow(Time.seconds(10))
+                .sum(1)
                 .print();
         streamEnv.execute("Flink Stream Java API Skeleton");
     }
@@ -113,11 +126,11 @@ public class StreamingJobWordCount {
         DataStreamSource<String> text = env.socketTextStream(hostname, port, "\n");
         // 本文填写的是远程linux ip，在远程linux上需要执行：nc -l 6100命令
         // 计算数据
-        DataStream<WordWithCount> windowCount = text.flatMap(new FlatMapFunction<String, WordWithCount>() {
-            public void flatMap(String value, Collector<WordWithCount> out) throws Exception {
+        DataStream<WordCount> windowCount = text.flatMap(new FlatMapFunction<String, WordCount>() {
+            public void flatMap(String value, Collector<WordCount> out) throws Exception {
                 String[] splits = value.split("\\s");
                 for (String word : splits) {
-                    out.collect(new WordWithCount(word, 1L));
+                    out.collect(new WordCount(word, 1L));
                 }
             }
         })// 打平操作，把每行的单词转为<word,count>类型的数据
@@ -138,7 +151,7 @@ public class StreamingJobWordCount {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class WordWithCount {
+    public static class WordCount {
         private String word;
         private long count;
 

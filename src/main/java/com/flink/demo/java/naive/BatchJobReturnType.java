@@ -32,7 +32,7 @@ public class BatchJobReturnType {
 
         DataSet<String> text = batchEnv.fromElements(inputArray);
         text.flatMap((String line, Collector<Tuple2<String, Integer>> out) ->
-                Stream.of(line.split("¥¥s+"))
+                Stream.of(line.split("\\s+"))
                         .forEach(value -> out.collect(Tuple2.of(value, 1))))
                 .returns(Types.TUPLE(Types.STRING, Types.INT))
                 .groupBy(0)

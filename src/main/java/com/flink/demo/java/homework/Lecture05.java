@@ -1,4 +1,4 @@
-package com.flink.demo.java.time;
+package com.flink.demo.java.homework;
 
 import com.flink.demo.java.netcat.NetCatConsole;
 import org.apache.flink.api.common.functions.MapFunction;
@@ -11,6 +11,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.AssignerWithPeriodicWatermarks;
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
 import org.apache.flink.streaming.api.watermark.Watermark;
+import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
@@ -26,7 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 
 
-public class StreamingJobWatermark {
+public class Lecture05 {
 
     public static void main(String[] args) throws Exception {
         //定义socket的端口号
@@ -57,7 +58,7 @@ public class StreamingJobWatermark {
         DataStream<Tuple2<String, Long>> waterMarkStream = inputMap.assignTimestampsAndWatermarks(new AssignerWithPeriodicWatermarks<Tuple2<String, Long>>() {
 
             Long currentMaxTimestamp = 0L;
-            final Long maxOutOfOrderness = 10000L;// 最大允许的乱序时间是10s
+            final Long maxOutOfOrderness = 2000L;// 最大允许的乱序时间是10s
 
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 
@@ -85,7 +86,7 @@ public class StreamingJobWatermark {
         //分组，聚合
         // DataStream<String> window = waterMarkStream.keyBy(0)
         SingleOutputStreamOperator<String> window = waterMarkStream.keyBy(0)
-                .window(TumblingEventTimeWindows.of(Time.seconds(3)))//按照消息的EventTime分配窗口，和调用TimeWindow效果一样
+                .window(SlidingEventTimeWindows.of(Time.seconds(10), Time.seconds(3)))//按照消息的EventTime分配窗口，和调用TimeWindow效果一样
                 .allowedLateness(Time.seconds(2))
                 .sideOutputLateData(lateOutputTag)
                 .apply(new WindowFunction<Tuple2<String, Long>, String, Tuple, TimeWindow>() {

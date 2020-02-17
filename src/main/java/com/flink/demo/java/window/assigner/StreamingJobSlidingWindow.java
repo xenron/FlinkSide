@@ -1,6 +1,6 @@
-package com.flink.demo.java.time;
+package com.flink.demo.java.window.assigner;
 
-import lombok.AllArgsConstructor;
+import com.flink.demo.java.time.StreamingJobEventTime;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.flink.api.common.functions.AggregateFunction;
@@ -11,17 +11,19 @@ import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrdernessTimestampExtractor;
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
+import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
-import static java.lang.Thread.sleep;
-
-public class StreamingJobIngestionTime {
+public class StreamingJobSlidingWindow {
 
     public static void main(String[] args) throws Exception {
 
@@ -32,19 +34,26 @@ public class StreamingJobIngestionTime {
             setBoolean("local.start-webserver", true);
         }};
         final StreamExecutionEnvironment streamEnv = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf);
-        streamEnv.setParallelism(1).setStreamTimeCharacteristic(TimeCharacteristic.IngestionTime);
+        streamEnv.setParallelism(1).setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
         streamEnv
                 .fromElements(
-                        // 2008-08-08 16:08:08
-                        new Order(1218182888000L, 100L, 10001L, 10L, 1000L),
-                        new Order(1218182889000L, 101L, 10002L, 15L, 2000L),
-                        new Order(1218182890000L, 100L, 10003L, 20L, 3000L),
-                        new Order(1218182891000L, 101L, 10004L, 25L, 4000L),
-                        new Order(1218182892000L, 100L, 10005L, 30L, 5000L),
-                        new Order(1218182893000L, 101L, 10006L, 35L, 6000L)
+                        new Order("2008-08-08 08:08:08", 100L, 10001L, 10L, 1000L),
+                        new Order("2008-08-08 08:08:09", 101L, 10002L, 15L, 2000L),
+                        new Order("2008-08-08 08:08:10", 100L, 10003L, 20L, 3000L),
+                        new Order("2008-08-08 08:08:11", 101L, 10004L, 25L, 4000L),
+                        new Order("2008-08-08 08:08:12", 100L, 10005L, 30L, 5000L),
+                        new Order("2008-08-08 08:08:13", 101L, 10006L, 35L, 6000L)
                 )
+                .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor<Order>(Time.seconds(1)) {
+                    @Override
+                    public long extractTimestamp(Order element) {
+                        return element.timestamp;
+                    }
+                })
                 .keyBy("userId")
-                .timeWindow(Time.seconds(5))
+                // .timeWindow(Time.seconds(5), Time.seconds(2))
+                // .window(SlidingEventTimeWindows.of(Time.seconds(5), Time.seconds(2)))
+                .window(SlidingEventTimeWindows.of(Time.seconds(5), Time.seconds(2), Time.seconds(0)))
                 .aggregate(new AggregateFunction<Order, Tuple4<Long, Long, Long, Long>, Tuple4<Long, Long, Long, Long>>() {
                     @Override
                     public Tuple4<Long, Long, Long, Long> createAccumulator() {
@@ -53,11 +62,6 @@ public class StreamingJobIngestionTime {
 
                     @Override
                     public Tuple4<Long, Long, Long, Long> add(Order value, Tuple4<Long, Long, Long, Long> accumulator) {
-                        try {
-                            sleep(3000L);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
                         return Tuple4.of(value.userId,
                                 accumulator.f1 + 1,
                                 accumulator.f2 + value.amount,
@@ -79,20 +83,26 @@ public class StreamingJobIngestionTime {
                         input.forEach(record -> out.collect(new OrderSummary(window.getStart(), window.getEnd(), record.f0, record.f1, record.f2, record.f3)));
                     }
                 }).print();
-
         streamEnv.execute("Flink Stream Java API Skeleton");
 
     }
 
     @Data
-    @AllArgsConstructor
     @NoArgsConstructor
     public static class Order {
+        private static final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         private long timestamp;
         private long userId;
         private long itemId;
         private long amount;
         private long price;
+        public Order (String timestamp, long userId, long itemId, long amount, long price) {
+            this.timestamp = LocalDateTime.parse(timestamp, timeFormatter).toEpochSecond(ZoneOffset.UTC) * 1000;
+            this.userId = userId;
+            this.itemId = itemId;
+            this.amount = amount;
+            this.price = price;
+        }
     }
 
     @Data
@@ -114,5 +124,4 @@ public class StreamingJobIngestionTime {
             this.total = total;
         }
     }
-
 }

@@ -21,7 +21,7 @@ import java.time.format.DateTimeFormatter;
 
 import static java.lang.Thread.sleep;
 
-public class ProcessingTime {
+public class StreamingJobProcessingTime {
 
     public static void main(String[] args) throws Exception {
 
@@ -79,6 +79,7 @@ public class ProcessingTime {
                         input.forEach(record -> out.collect(new OrderSummary(window.getStart(), window.getEnd(), record.f0, record.f1, record.f2, record.f3)));
                     }
                 }).print();
+
         streamEnv.execute("Flink Stream Java API Skeleton");
 
     }

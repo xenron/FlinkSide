@@ -1,4 +1,4 @@
-package com.flink.demo.java.join;
+package com.flink.demo.java.operator.join;
 
 import org.apache.flink.api.common.functions.CoGroupFunction;
 import org.apache.flink.api.common.functions.JoinFunction;

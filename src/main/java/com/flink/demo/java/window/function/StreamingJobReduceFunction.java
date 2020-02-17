@@ -1,9 +1,10 @@
-package com.flink.demo.java.time;
+package com.flink.demo.java.window.function;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.flink.api.common.functions.AggregateFunction;
+import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.configuration.Configuration;
@@ -11,15 +12,18 @@ import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrdernessTimestampExtractor;
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
-public class StreamingJobEventTime {
+public class StreamingJobReduceFunction {
 
     public static void main(String[] args) throws Exception {
 
@@ -31,55 +35,35 @@ public class StreamingJobEventTime {
         }};
         final StreamExecutionEnvironment streamEnv = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf);
         streamEnv.setParallelism(1).setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
+        streamEnv.getConfig().setAutoWatermarkInterval(1);
         streamEnv
                 .fromElements(
-                        // 2008-08-08 16:08:08
-                        new Order(1218182888000L, 100L, 10001L, 10L, 1000L),
-                        new Order(1218182889000L, 101L, 10002L, 15L, 2000L),
-                        new Order(1218182890000L, 100L, 10003L, 20L, 3000L),
-                        new Order(1218182891000L, 101L, 10004L, 25L, 4000L),
-                        new Order(1218182892000L, 100L, 10005L, 30L, 5000L),
-                        new Order(1218182893000L, 101L, 10006L, 35L, 6000L)
+                        new Order("2008-08-08 08:08:06", 100L, 10L, 1000L),
+                        new Order("2008-08-08 08:08:07", 101L, 15L, 2000L),
+                        new Order("2008-08-08 08:08:08", 100L, 10L, 1000L),
+                        new Order("2008-08-08 08:08:09", 101L, 15L, 2000L),
+                        new Order("2008-08-08 08:08:10", 100L, 20L, 3000L),
+                        new Order("2008-08-08 08:08:11", 101L, 25L, 4000L),
+                        new Order("2008-08-08 08:08:12", 100L, 30L, 5000L),
+                        new Order("2008-08-08 08:08:13", 101L, 35L, 6000L)
                 )
-                .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor<Order>(Time.seconds(5)) {
+                .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor<Order>(Time.seconds(1)) {
                     @Override
-                    public long extractTimestamp(Order order) {
-                        return order.timestamp;
+                    public long extractTimestamp(Order element) {
+                        return element.getTs();
                     }
                 })
                 .keyBy("userId")
                 .timeWindow(Time.seconds(5))
-                // userid, order count, product count, amount
-                .aggregate(new AggregateFunction<Order, Tuple4<Long, Long, Long, Long>, Tuple4<Long, Long, Long, Long>>() {
+                .reduce(new ReduceFunction<Order>() {
                     @Override
-                    public Tuple4<Long, Long, Long, Long> createAccumulator() {
-                        return Tuple4.of(0L, 0L, 0L, 0L);
-                    }
-
-                    @Override
-                    public Tuple4<Long, Long, Long, Long> add(Order value, Tuple4<Long, Long, Long, Long> accumulator) {
-                        return Tuple4.of(value.userId,
-                                accumulator.f1 + 1,
-                                accumulator.f2 + value.amount,
-                                accumulator.f3 + value.amount * value.price);
-                    }
-
-                    @Override
-                    public Tuple4<Long, Long, Long, Long> getResult(Tuple4<Long, Long, Long, Long> accumulator) {
-                        return accumulator;
-                    }
-
-                    @Override
-                    public Tuple4<Long, Long, Long, Long> merge(Tuple4<Long, Long, Long, Long> a, Tuple4<Long, Long, Long, Long> b) {
-                        return Tuple4.of(a.f0, a.f1 + b.f1, a.f2 + b.f2, a.f3 + b.f3);
-                    }
-                }, new WindowFunction<Tuple4<Long, Long, Long, Long>, OrderSummary, Tuple, TimeWindow>() {
-                    @Override
-                    public void apply(Tuple tuple, TimeWindow window, Iterable<Tuple4<Long, Long, Long, Long>> input, Collector<OrderSummary> out) throws Exception {
-                        input.forEach(record -> out.collect(new OrderSummary(window.getStart(), window.getEnd(), record.f0, record.f1, record.f2, record.f3)));
+                    public Order reduce(Order order1, Order order2) throws Exception {
+                        return new Order(order1.timestamp,
+                                order1.userId,
+                                order1.amount + order2.amount,
+                                order1.total + order2.total);
                     }
                 }).print();
-
         streamEnv.execute("Flink Stream Java API Skeleton");
 
     }
@@ -88,11 +72,14 @@ public class StreamingJobEventTime {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Order {
-        private long timestamp;
+        private static final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        private String timestamp;
         private long userId;
-        private long itemId;
         private long amount;
-        private long price;
+        private long total;
+        public long getTs() {
+            return LocalDateTime.parse(timestamp, timeFormatter).toEpochSecond(ZoneOffset.UTC) * 1000;
+        }
     }
 
     @Data

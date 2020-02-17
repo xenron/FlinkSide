@@ -1,4 +1,4 @@
-package com.flink.demo.java.naive;
+package com.flink.demo.java.naive.key;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

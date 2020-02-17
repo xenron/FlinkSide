@@ -29,8 +29,8 @@ public class NetCatConsole {
                 return;
             }
         }
-//        List<String> messages = generateMessages();
-        List<String> messages = generateMessages1();
+        List<String> messages = generateMessages();
+//        List<String> messages = generateMessages1();
         sendMessages(host, port, messages);
     }
 
